@@ -10,6 +10,7 @@ const state = {
     collectedNotes: new Set(),
     currentLevel: 1,
     lives: 3,
+    highScore: 0,
     map: [],
     notePositions: [],
     doors: [],
@@ -22,23 +23,58 @@ const state = {
     hideNotesOnPlayback: true // Difficulty setting
 };
 
+// LocalStorage key
+const HIGH_SCORE_KEY = 'melodyDungeon_highScore';
+
+function loadHighScore() {
+    try {
+        const saved = localStorage.getItem(HIGH_SCORE_KEY);
+        if (saved) {
+            state.highScore = parseInt(saved, 10) || 0;
+        }
+    } catch (e) {
+        console.warn('Could not load high score:', e);
+    }
+}
+
+function saveHighScore() {
+    try {
+        localStorage.setItem(HIGH_SCORE_KEY, state.highScore.toString());
+    } catch (e) {
+        console.warn('Could not save high score:', e);
+    }
+}
+
+function checkHighScore() {
+    if (state.currentLevel > state.highScore) {
+        state.highScore = state.currentLevel;
+        saveHighScore();
+        return true; // New high score!
+    }
+    return false;
+}
+
 let inventoryUI = null;
 let livesUI = null;
 let overlayUI = null;
 let toggleUI = null;
+let scoreUI = null;
 
-export function initGame(canvas, inventoryElement, livesElement, overlayElement, toggleElement) {
+export function initGame(canvas, inventoryElement, livesElement, overlayElement, toggleElement, scoreElement) {
     renderer.initRenderer(canvas);
     inventoryUI = inventoryElement;
     livesUI = livesElement;
     overlayUI = overlayElement;
     toggleUI = toggleElement;
+    scoreUI = scoreElement;
 
+    loadHighScore();
     initInput();
     setupInputHandlers();
     setupToggle();
     updateInventoryUI();
     updateLivesUI();
+    updateScoreUI();
 
     loadLevel(1);
 }
@@ -103,13 +139,25 @@ function loadLevel(levelNum) {
     // Award extra life for completing previous level (not on first level)
     if (levelNum > 1 && state.currentLevel < levelNum) {
         state.lives++;
-        showMessage(`Level ${levelNum} - Extra life!`);
         updateLivesUI();
+    }
+
+    state.currentLevel = levelNum;
+
+    // Check for new high score
+    const isNewHighScore = checkHighScore();
+    updateScoreUI();
+
+    if (levelNum > 1) {
+        if (isNewHighScore) {
+            showMessage(`Level ${levelNum} - NEW HIGH SCORE!`);
+        } else {
+            showMessage(`Level ${levelNum} - Extra life!`);
+        }
     } else {
         showMessage(`Level ${levelNum}`);
     }
 
-    state.currentLevel = levelNum;
     state.collectedNotes.clear();
     state.puzzleState = null;
     state.puzzleSequence = [];
@@ -270,6 +318,11 @@ function updateLivesUI() {
     livesUI.textContent = '❤'.repeat(state.lives) + '♡'.repeat(Math.max(0, 3 - state.lives));
 }
 
+function updateScoreUI() {
+    if (!scoreUI) return;
+    scoreUI.innerHTML = `Level: <span class="current">${state.currentLevel}</span> | Best: <span class="best">${state.highScore}</span>`;
+}
+
 function showOverlay() {
     if (overlayUI) {
         overlayUI.classList.add('visible');
@@ -284,9 +337,10 @@ function hideOverlay() {
 
 export function restartGame() {
     state.lives = 3;
-    state.currentLevel = 1;
+    state.currentLevel = 0; // Set to 0 so loadLevel(1) doesn't think we're advancing
     state.puzzleState = null;
     updateLivesUI();
+    updateScoreUI();
     hideOverlay();
     loadLevel(1);
 }

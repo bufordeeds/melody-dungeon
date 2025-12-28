@@ -8,12 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const lives = document.getElementById('livesDisplay');
     const overlay = document.getElementById('noteOverlay');
     const toggle = document.getElementById('hideNotesToggle');
+    const score = document.getElementById('scoreDisplay');
 
     // Set canvas size
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
     // Initialize and start game
-    initGame(canvas, inventory, lives, overlay, toggle);
+    initGame(canvas, inventory, lives, overlay, toggle, score);
     startGameLoop();
 });

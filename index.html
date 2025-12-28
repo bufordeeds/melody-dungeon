@@ -73,6 +73,18 @@
             color: #ff4444;
             letter-spacing: 4px;
         }
+        #scoreDisplay {
+            font-size: 14px;
+            color: #aaa;
+        }
+        #scoreDisplay .current {
+            color: #fff;
+            font-weight: bold;
+        }
+        #scoreDisplay .best {
+            color: #ffd700;
+            font-weight: bold;
+        }
         #settingsPanel {
             display: flex;
             align-items: center;
@@ -123,6 +135,7 @@
     <div id="gameContainer">
         <div id="topBar">
             <div id="livesDisplay">❤❤❤</div>
+            <div id="scoreDisplay">Level: <span class="current">1</span> | Best: <span class="best">0</span></div>
             <div id="settingsPanel">
                 <label>
                     <input type="checkbox" id="hideNotesToggle" checked>
