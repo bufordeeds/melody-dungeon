@@ -4,7 +4,7 @@ A browser-based musical dungeon crawler where you collect notes and solve melody
 
 🎮 [Try it live here!](https://bufordeeds.github.io/melody-dungeon/)
 
-![Melody Dungeon Screenshot](screenshot.png)
+![Melody Dungeon Screenshot](melody-dungeon.png)
 
 ## How to Play
 
