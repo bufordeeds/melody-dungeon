@@ -11,30 +11,39 @@
             box-sizing: border-box;
         }
         html, body {
-            overflow: hidden;
             touch-action: manipulation;
+            height: 100%;
         }
         body {
             background: #1a1a2e;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             font-family: monospace;
             -webkit-user-select: none;
             user-select: none;
+            padding: 10px;
+            overflow: hidden;
         }
         #gameContainer {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            max-height: 100%;
+            width: 100%;
+            max-width: 850px;
         }
         canvas {
             border: 4px solid #4a4a6a;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            max-width: 100%;
+            max-height: 55vh;
+            object-fit: contain;
+            flex-shrink: 1;
         }
         #noteInventory {
             display: flex;
@@ -74,6 +83,7 @@
             width: 100%;
             max-width: 800px;
             padding: 0 10px;
+            flex-shrink: 0;
         }
         #livesDisplay {
             font-size: 24px;
@@ -137,12 +147,13 @@
             text-align: center;
         }
         #gameTitle {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             color: #fff;
             text-align: center;
             letter-spacing: 2px;
             text-shadow: 0 0 10px #44aaff, 0 0 20px #44aaff44;
+            flex-shrink: 0;
         }
         #gameTitle .music-note {
             color: #ffcc00;
@@ -151,9 +162,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-            font-size: 12px;
+            gap: 6px;
+            font-size: 11px;
+            flex-shrink: 0;
         }
         #footer a {
             color: #44aaff;
@@ -314,9 +325,6 @@
             #instructions {
                 display: none;
             }
-            html, body {
-                overflow-y: auto;
-            }
             body {
                 padding: 10px;
                 align-items: flex-start;
@@ -348,8 +356,22 @@
                 border-color: currentColor;
             }
             #touchNotes.hidden .touch-note {
-                background: #1a1a2e;
-                color: transparent !important;
+                background: #2a2a4e !important;
+                color: #2a2a4e !important;
+                border-color: #3a3a5a !important;
+                pointer-events: none;
+            }
+            #touchNotes.hidden::before {
+                content: "Listen...";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                color: #888;
+                font-size: 16px;
+            }
+            #touchNotes {
+                position: relative;
             }
             #footer {
                 font-size: 11px;
