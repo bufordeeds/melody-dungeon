@@ -2,7 +2,7 @@
 
 A browser-based musical dungeon crawler where you collect notes and solve melody puzzles to escape procedurally generated dungeons.
 
-🎮 **[Play Now](https://bufordeeds.github.io/melody-dungeon/)**
+🎮 **[Play Now]([https://bufordeeds.github.io/melody-dungeon/](https://bufordeeds.github.io/melody-dungeon/))**
 
 ![Melody Dungeon Screenshot](screenshot.png)
 
