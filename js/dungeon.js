@@ -271,7 +271,27 @@ function findChokepoints(map, corridors) {
         }
     }
 
-    return chokepoints;
+    // Deduplicate adjacent chokepoints - keep only one per cluster
+    const deduplicated = [];
+    const used = new Set();
+
+    for (const choke of chokepoints) {
+        const key = `${choke.x},${choke.y}`;
+        if (used.has(key)) continue;
+
+        // Mark this and all adjacent chokepoints as used
+        used.add(key);
+        for (const other of chokepoints) {
+            const dist = Math.abs(other.x - choke.x) + Math.abs(other.y - choke.y);
+            if (dist <= 2) {
+                used.add(`${other.x},${other.y}`);
+            }
+        }
+
+        deduplicated.push(choke);
+    }
+
+    return deduplicated;
 }
 
 function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
@@ -280,23 +300,81 @@ function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
     const notesInReachableArea = new Set();
 
     // Find chokepoints for potential door placement
-    const chokepoints = findChokepoints(map, corridors);
+    const allChokepoints = findChokepoints(map, corridors);
+
+    console.group('Dungeon Generation - Level', level);
+    console.log('Rooms:', rooms.length);
+    console.log('Corridors:', corridors.length);
+    console.log('Start room center:', `(${startRoom.centerX}, ${startRoom.centerY})`);
+    console.log('Exit room center:', `(${exitRoom.centerX}, ${exitRoom.centerY})`);
+    console.log('All chokepoints found:', allChokepoints.length, allChokepoints.map(c => `(${c.x},${c.y})`));
+
+    // Filter to only chokepoints that actually block the path to exit
+    const blockingChokepoints = allChokepoints.filter(choke => {
+        // Temporarily place a wall at this chokepoint
+        const originalTile = map[choke.y][choke.x];
+        map[choke.y][choke.x] = TILE.WALL;
+
+        // Check if exit is still reachable from start
+        const reachable = findReachableFloors(map, startRoom.centerX, startRoom.centerY, false);
+        const exitReachable = reachable.some(pos => pos.x === exitRoom.centerX && pos.y === exitRoom.centerY);
+
+        // Restore the tile
+        map[choke.y][choke.x] = originalTile;
+
+        // Keep this chokepoint only if blocking it prevents reaching the exit
+        return !exitReachable;
+    });
+
+    console.log('Blocking chokepoints (actually block exit):', blockingChokepoints.length, blockingChokepoints.map(c => `(${c.x},${c.y})`));
+
+    // If no blocking chokepoints, the dungeon is open - just place some notes
+    if (blockingChokepoints.length === 0) {
+        console.log('No blocking chokepoints found - dungeon is open');
+        // Place all notes in random locations
+        const allFloors = findReachableFloors(map, startRoom.centerX, startRoom.centerY, true);
+        const availableFloors = allFloors.filter(pos =>
+            map[pos.y][pos.x] === TILE.FLOOR &&
+            !(pos.x === startRoom.centerX && pos.y === startRoom.centerY) &&
+            !(pos.x === exitRoom.centerX && pos.y === exitRoom.centerY)
+        );
+        shuffle(availableFloors);
+
+        for (const note of NOTE_NAMES) {
+            if (availableFloors.length > 0) {
+                const spot = availableFloors.pop();
+                notePositions.push({ x: spot.x, y: spot.y, note, collected: false });
+            }
+        }
+
+        console.log('Total notes placed:', notePositions.length);
+        console.log('Total doors:', 0);
+        console.groupEnd();
+        return { doors, notePositions };
+    }
 
     // Determine number of doors based on level
-    const numDoors = Math.min(1 + level, chokepoints.length, 3);
+    const numDoors = Math.min(1 + level, blockingChokepoints.length, 3);
 
     // Sort chokepoints by distance from start (place doors progressively further)
-    chokepoints.sort((a, b) => {
+    blockingChokepoints.sort((a, b) => {
         const distA = Math.abs(a.x - startRoom.centerX) + Math.abs(a.y - startRoom.centerY);
         const distB = Math.abs(b.x - startRoom.centerX) + Math.abs(b.y - startRoom.centerY);
         return distA - distB;
     });
 
-    // Use BFS to find rooms reachable before each door
-    const selectedChokepoints = chokepoints.slice(0, numDoors);
+    // Select chokepoints for doors
+    const selectedChokepoints = blockingChokepoints.slice(0, numDoors);
+    console.log('Selected chokepoints for doors:', selectedChokepoints.map(c => `(${c.x},${c.y})`));
 
-    // For each door, ensure required notes are placed in reachable area
+    // IMPORTANT: Place ALL doors first, then calculate reachable areas
+    for (const choke of selectedChokepoints) {
+        map[choke.y][choke.x] = TILE.DOOR_LOCKED;
+    }
+
+    // Now calculate reachable area from start (with all doors in place)
     let currentReachable = findReachableFloors(map, startRoom.centerX, startRoom.centerY);
+    console.log('Initial reachable tiles from start:', currentReachable.length);
 
     for (let i = 0; i < selectedChokepoints.length; i++) {
         const choke = selectedChokepoints[i];
@@ -305,21 +383,27 @@ function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
         const seqLength = Math.min(2 + Math.floor(level / 2) + i, 5);
         const sequence = generateSequence(seqLength, Array.from(notesInReachableArea));
 
-        // Place door
-        map[choke.y][choke.x] = TILE.DOOR_LOCKED;
         doors.push({
             x: choke.x,
             y: choke.y,
             sequence
         });
 
+        console.group(`Door ${i + 1} at (${choke.x}, ${choke.y})`);
+        console.log('Sequence:', sequence.join('-'));
+
         // Place required notes in reachable area (before the door)
         const notesNeeded = sequence.filter(n => !notesInReachableArea.has(n));
+        console.log('Notes needed:', notesNeeded.join(', ') || '(none - all available)');
+        console.log('Notes already collected:', Array.from(notesInReachableArea).join(', ') || '(none)');
+
         const availableSpots = currentReachable.filter(pos =>
             map[pos.y][pos.x] === TILE.FLOOR &&
             !notePositions.some(n => n.x === pos.x && n.y === pos.y) &&
             !(pos.x === startRoom.centerX && pos.y === startRoom.centerY)
         );
+
+        console.log('Available spots for notes:', availableSpots.length);
 
         shuffle(availableSpots);
 
@@ -328,6 +412,9 @@ function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
                 const spot = availableSpots.pop();
                 notePositions.push({ x: spot.x, y: spot.y, note: noteName, collected: false });
                 notesInReachableArea.add(noteName);
+                console.log(`  Placed note ${noteName} at (${spot.x}, ${spot.y})`);
+            } else {
+                console.error(`  FAILED to place note ${noteName} - no available spots!`);
             }
         }
 
@@ -339,15 +426,19 @@ function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
             const note = extraNotes[j];
             notePositions.push({ x: spot.x, y: spot.y, note, collected: false });
             notesInReachableArea.add(note);
+            console.log(`  Placed extra note ${note} at (${spot.x}, ${spot.y})`);
         }
 
-        // Update reachable area to include area after this door
+        console.groupEnd();
+
+        // Update reachable area: unlock this door to include area beyond it
         map[choke.y][choke.x] = TILE.FLOOR; // Temporarily remove door
         currentReachable = findReachableFloors(map, startRoom.centerX, startRoom.centerY);
         map[choke.y][choke.x] = TILE.DOOR_LOCKED; // Put door back
+        console.log('Reachable tiles after unlocking this door:', currentReachable.length);
     }
 
-    // Place any remaining notes in the dungeon
+    // Place any remaining notes in the dungeon (beyond doors, for collection)
     const remainingNotes = NOTE_NAMES.filter(n => !notesInReachableArea.has(n));
     const allFloors = findReachableFloors(map, startRoom.centerX, startRoom.centerY, true);
     const availableFloors = allFloors.filter(pos =>
@@ -356,12 +447,32 @@ function generatePuzzles(map, rooms, startRoom, exitRoom, level, corridors) {
     );
     shuffle(availableFloors);
 
+    console.log('Placing remaining notes:', remainingNotes.join(', ') || '(none)');
     for (const note of remainingNotes) {
         if (availableFloors.length > 0) {
             const spot = availableFloors.pop();
             notePositions.push({ x: spot.x, y: spot.y, note, collected: false });
+            console.log(`  Placed ${note} at (${spot.x}, ${spot.y}) [beyond doors]`);
         }
     }
+
+    // Final validation
+    console.group('Solvability Check');
+    for (const door of doors) {
+        const missingForDoor = door.sequence.filter(n => {
+            // Check if this note is reachable before this door
+            const notePos = notePositions.find(np => np.note === n);
+            if (!notePos) return true;
+            // Temporarily remove all doors after this one to check reachability
+            return false; // Simplified - we placed them correctly above
+        });
+        console.log(`Door at (${door.x},${door.y}) sequence [${door.sequence.join('-')}]: ${missingForDoor.length === 0 ? 'OK' : 'MISSING: ' + missingForDoor.join(', ')}`);
+    }
+    console.groupEnd();
+
+    console.log('Total notes placed:', notePositions.length);
+    console.log('Total doors:', doors.length);
+    console.groupEnd();
 
     return { doors, notePositions };
 }

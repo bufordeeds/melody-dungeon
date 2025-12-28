@@ -60,6 +60,58 @@
             font-size: 10px;
             opacity: 0.6;
         }
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 0 10px;
+        }
+        #livesDisplay {
+            font-size: 24px;
+            color: #ff4444;
+            letter-spacing: 4px;
+        }
+        #settingsPanel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: 12px;
+        }
+        #settingsPanel label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        #settingsPanel input[type="checkbox"] {
+            cursor: pointer;
+        }
+        #inventoryWrapper {
+            position: relative;
+        }
+        #noteOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #2a2a4e;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        #noteOverlay.visible {
+            opacity: 1;
+        }
         #instructions {
             color: #888;
             font-size: 12px;
@@ -69,10 +121,22 @@
 </head>
 <body>
     <div id="gameContainer">
+        <div id="topBar">
+            <div id="livesDisplay">❤❤❤</div>
+            <div id="settingsPanel">
+                <label>
+                    <input type="checkbox" id="hideNotesToggle" checked>
+                    Hide notes during playback
+                </label>
+            </div>
+        </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="noteInventory"></div>
+        <div id="inventoryWrapper">
+            <div id="noteInventory"></div>
+            <div id="noteOverlay">Listen...</div>
+        </div>
         <div id="instructions">
-            Arrow keys: Move | 1-7: Play notes | Space: Interact with doors
+            Arrow keys: Move | 1-7: Play notes | Space: Interact with doors | R: Restart (game over)
         </div>
     </div>
 

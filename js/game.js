@@ -2,35 +2,59 @@ import { TILE, MAP_WIDTH, MAP_HEIGHT, NOTE_NAMES, NOTES } from './constants.js';
 import { generateDungeon } from './dungeon.js';
 import { playNote, playMelody, playErrorSound, playSuccessSound, playPickupSound, initAudio } from './audio.js';
 import * as renderer from './renderer.js';
-import { initInput, onMove, onPlayNote, onInteract } from './input.js';
+import { initInput, onMove, onPlayNote, onInteract, onRestart, updateInput } from './input.js';
 
 // Game state
 const state = {
     player: { x: 1, y: 1 },
     collectedNotes: new Set(),
     currentLevel: 1,
+    lives: 3,
     map: [],
     notePositions: [],
     doors: [],
-    puzzleState: null, // null, 'listening', 'input', 'won'
+    puzzleState: null, // null, 'listening', 'input', 'won', 'gameover'
     puzzleSequence: [],
     playerInput: [],
     puzzleDoor: null,
     message: '',
-    messageTimer: 0
+    messageTimer: 0,
+    hideNotesOnPlayback: true // Difficulty setting
 };
 
 let inventoryUI = null;
+let livesUI = null;
+let overlayUI = null;
+let toggleUI = null;
 
-export function initGame(canvas, inventoryElement) {
+export function initGame(canvas, inventoryElement, livesElement, overlayElement, toggleElement) {
     renderer.initRenderer(canvas);
     inventoryUI = inventoryElement;
+    livesUI = livesElement;
+    overlayUI = overlayElement;
+    toggleUI = toggleElement;
 
     initInput();
     setupInputHandlers();
+    setupToggle();
     updateInventoryUI();
+    updateLivesUI();
 
     loadLevel(1);
+}
+
+function setupToggle() {
+    if (toggleUI) {
+        toggleUI.checked = state.hideNotesOnPlayback;
+        toggleUI.addEventListener('change', () => {
+            state.hideNotesOnPlayback = toggleUI.checked;
+        });
+    }
+}
+
+export function toggleHideNotes() {
+    state.hideNotesOnPlayback = !state.hideNotesOnPlayback;
+    if (toggleUI) toggleUI.checked = state.hideNotesOnPlayback;
 }
 
 function setupInputHandlers() {
@@ -38,6 +62,12 @@ function setupInputHandlers() {
         initAudio();
         if (state.puzzleState === null) {
             movePlayer(dx, dy);
+        }
+    });
+
+    onRestart(() => {
+        if (state.puzzleState === 'gameover') {
+            restartGame();
         }
     });
 
@@ -70,6 +100,15 @@ function setupInputHandlers() {
 }
 
 function loadLevel(levelNum) {
+    // Award extra life for completing previous level (not on first level)
+    if (levelNum > 1 && state.currentLevel < levelNum) {
+        state.lives++;
+        showMessage(`Level ${levelNum} - Extra life!`);
+        updateLivesUI();
+    } else {
+        showMessage(`Level ${levelNum}`);
+    }
+
     state.currentLevel = levelNum;
     state.collectedNotes.clear();
     state.puzzleState = null;
@@ -87,7 +126,7 @@ function loadLevel(levelNum) {
     state.notePositions = dungeon.notePositions;
 
     updateInventoryUI();
-    showMessage(`Level ${levelNum}`);
+    hideOverlay();
 }
 
 function movePlayer(dx, dy) {
@@ -158,10 +197,12 @@ function startPuzzle(door) {
     state.playerInput = [];
 
     showMessage("Listen to the melody...");
+    if (state.hideNotesOnPlayback) showOverlay();
 
     // Play the melody, then switch to input mode
     const duration = playMelody(door.sequence, 400, highlightNote);
     setTimeout(() => {
+        hideOverlay();
         state.puzzleState = 'input';
         showMessage("Your turn! Repeat the melody.");
     }, duration + 500);
@@ -173,17 +214,31 @@ function checkPuzzleInput() {
     const actual = state.playerInput[inputLen - 1];
 
     if (actual !== expected) {
-        // Wrong note!
+        // Wrong note - lose a life!
+        state.lives--;
+        updateLivesUI();
         playErrorSound();
-        showMessage("Wrong note! Try again...");
+
+        if (state.lives <= 0) {
+            // Game over
+            state.puzzleState = 'gameover';
+            showMessage("Game Over! Press R to restart.");
+            return;
+        }
+
+        showMessage(`Wrong note! Lives: ${state.lives}`);
         state.playerInput = [];
 
         // Replay melody after delay
         setTimeout(() => {
+            if (state.puzzleState === 'gameover') return;
             state.puzzleState = 'listening';
             showMessage("Listen again...");
+            if (state.hideNotesOnPlayback) showOverlay();
             const duration = playMelody(state.puzzleSequence, 400, highlightNote);
             setTimeout(() => {
+                if (state.puzzleState === 'gameover') return;
+                hideOverlay();
                 state.puzzleState = 'input';
                 showMessage("Your turn!");
             }, duration + 500);
@@ -208,6 +263,32 @@ function checkPuzzleInput() {
 function showMessage(text, duration = 2000) {
     state.message = text;
     state.messageTimer = duration;
+}
+
+function updateLivesUI() {
+    if (!livesUI) return;
+    livesUI.textContent = '❤'.repeat(state.lives) + '♡'.repeat(Math.max(0, 3 - state.lives));
+}
+
+function showOverlay() {
+    if (overlayUI) {
+        overlayUI.classList.add('visible');
+    }
+}
+
+function hideOverlay() {
+    if (overlayUI) {
+        overlayUI.classList.remove('visible');
+    }
+}
+
+export function restartGame() {
+    state.lives = 3;
+    state.currentLevel = 1;
+    state.puzzleState = null;
+    updateLivesUI();
+    hideOverlay();
+    loadLevel(1);
 }
 
 function updateInventoryUI() {
@@ -255,6 +336,11 @@ function gameLoop(timestamp) {
     // Update message timer
     if (state.messageTimer > 0) {
         state.messageTimer -= deltaTime;
+    }
+
+    // Handle held movement keys (only when not in puzzle)
+    if (state.puzzleState === null) {
+        updateInput(timestamp);
     }
 
     // Render

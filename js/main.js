@@ -5,12 +5,15 @@ import { initGame, startGameLoop } from './game.js';
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const inventory = document.getElementById('noteInventory');
+    const lives = document.getElementById('livesDisplay');
+    const overlay = document.getElementById('noteOverlay');
+    const toggle = document.getElementById('hideNotesToggle');
 
     // Set canvas size
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
     // Initialize and start game
-    initGame(canvas, inventory);
+    initGame(canvas, inventory, lives, overlay, toggle);
     startGameLoop();
 });
