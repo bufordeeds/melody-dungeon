@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Melody Dungeon</title>
     <style>
         * {
@@ -10,13 +10,20 @@
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            overflow: hidden;
+            touch-action: manipulation;
+        }
         body {
             background: #1a1a2e;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            min-height: 100dvh;
             font-family: monospace;
+            -webkit-user-select: none;
+            user-select: none;
         }
         #gameContainer {
             display: flex;
@@ -129,10 +136,230 @@
             font-size: 12px;
             text-align: center;
         }
+        #gameTitle {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #44aaff, 0 0 20px #44aaff44;
+        }
+        #gameTitle .music-note {
+            color: #ffcc00;
+        }
+        #footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        #footer a {
+            color: #44aaff;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        #footer a:hover {
+            color: #88ccff;
+            text-decoration: underline;
+        }
+        #tipjar {
+            background: #ffdd00;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-decoration: none !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #tipjar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #ffdd0088;
+            color: #000;
+        }
+
+        /* Touch Controls */
+        #touchControls {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            gap: 10px;
+            padding: 10px;
+            flex-direction: column;
+        }
+        #touchControlsRow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 4px;
+        }
+        .dpad-btn {
+            background: #3a3a5a;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .dpad-btn:active {
+            background: #5a5a7a;
+            transform: scale(0.95);
+        }
+        .dpad-btn.empty {
+            background: transparent;
+            border: none;
+        }
+        #actionButtons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .action-btn {
+            background: #3a3a5a;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            padding: 15px 25px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .action-btn:active {
+            background: #5a5a7a;
+            transform: scale(0.95);
+        }
+        .action-btn.interact {
+            background: #2a4a2a;
+            border-color: #3a6a3a;
+        }
+        .action-btn.restart {
+            background: #4a2a2a;
+            border-color: #6a3a3a;
+            font-size: 12px;
+            padding: 10px 15px;
+        }
+        #touchNotes {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .touch-note {
+            width: 44px;
+            height: 54px;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background: #2a2a4e;
+        }
+        .touch-note:active {
+            transform: scale(0.95);
+        }
+        .touch-note.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px currentColor;
+        }
+        .touch-note .key-hint {
+            font-size: 10px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+            #topBar {
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+            #settingsPanel {
+                font-size: 11px;
+            }
+        }
+
+        @media (pointer: coarse), (max-width: 600px) {
+            #touchControls {
+                display: flex;
+            }
+            #instructions {
+                display: none;
+            }
+            html, body {
+                overflow-y: auto;
+            }
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            #gameContainer {
+                gap: 8px;
+                padding-bottom: 20px;
+            }
+            #gameTitle {
+                font-size: 20px;
+            }
+            #livesDisplay {
+                font-size: 20px;
+            }
+            #scoreDisplay {
+                font-size: 12px;
+            }
+            canvas {
+                max-width: calc(100vw - 20px);
+            }
+            #inventoryWrapper {
+                display: none;
+            }
+            .touch-note {
+                opacity: 0.4;
+            }
+            .touch-note.collected {
+                opacity: 1;
+                border-color: currentColor;
+            }
+            #footer {
+                font-size: 11px;
+            }
+            #tipjar {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
+        <h1 id="gameTitle"><span class="music-note">♪</span> Melody Dungeon <span class="music-note">♪</span></h1>
         <div id="topBar">
             <div id="livesDisplay">❤❤❤</div>
             <div id="scoreDisplay">Level: <span class="current">1</span> | Best: <span class="best">0</span></div>
@@ -150,6 +377,45 @@
         </div>
         <div id="instructions">
             Arrow keys: Move | 1-7: Play notes | Space: Interact with doors | R: Restart (game over)
+        </div>
+
+        <!-- Touch Controls (shown on mobile) -->
+        <div id="touchControls">
+            <div id="touchNotes">
+                <button class="touch-note" data-note="0" style="color: #ff4444;">C</button>
+                <button class="touch-note" data-note="1" style="color: #ff8844;">D</button>
+                <button class="touch-note" data-note="2" style="color: #ffff44;">E</button>
+                <button class="touch-note" data-note="3" style="color: #44ff44;">F</button>
+                <button class="touch-note" data-note="4" style="color: #44ffff;">G</button>
+                <button class="touch-note" data-note="5" style="color: #4444ff;">A</button>
+                <button class="touch-note" data-note="6" style="color: #ff44ff;">B</button>
+            </div>
+            <div id="touchControlsRow">
+                <div class="dpad">
+                    <div class="dpad-btn empty"></div>
+                    <button class="dpad-btn" data-dir="up">▲</button>
+                    <div class="dpad-btn empty"></div>
+                    <button class="dpad-btn" data-dir="left">◀</button>
+                    <div class="dpad-btn empty"></div>
+                    <button class="dpad-btn" data-dir="right">▶</button>
+                    <div class="dpad-btn empty"></div>
+                    <button class="dpad-btn" data-dir="down">▼</button>
+                    <div class="dpad-btn empty"></div>
+                </div>
+                <div id="actionButtons">
+                    <button class="action-btn interact" id="interactBtn">Interact</button>
+                    <button class="action-btn restart" id="restartBtn">Restart</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer">
+            <a href="https://buymeacoffee.com/bufordeeds" target="_blank" rel="noopener" id="tipjar">
+                ☕ Buy me a coffee
+            </a>
+            <span style="color: #666;">
+                Found a bug? <a href="https://github.com/bufordeeds/melody-dungeon/issues" target="_blank" rel="noopener">Submit feedback on GitHub</a>
+            </span>
         </div>
     </div>
 

@@ -102,6 +102,7 @@ function setupInputHandlers() {
     });
 
     onRestart(() => {
+        initAudio();
         if (state.puzzleState === 'gameover') {
             restartGame();
         }
@@ -346,33 +347,55 @@ export function restartGame() {
 }
 
 function updateInventoryUI() {
-    if (!inventoryUI) return;
+    // Update desktop inventory
+    if (inventoryUI) {
+        inventoryUI.innerHTML = '';
 
-    inventoryUI.innerHTML = '';
+        NOTE_NAMES.forEach((noteName, index) => {
+            const slot = document.createElement('div');
+            slot.className = 'note-slot';
+            slot.id = `note-${noteName}`;
+            slot.style.color = NOTES[noteName].color;
 
-    NOTE_NAMES.forEach((noteName, index) => {
-        const slot = document.createElement('div');
-        slot.className = 'note-slot';
-        slot.id = `note-${noteName}`;
-        slot.style.color = NOTES[noteName].color;
+            if (state.collectedNotes.has(noteName)) {
+                slot.classList.add('collected');
+            }
 
+            slot.innerHTML = `
+                <span class="name">${noteName}</span>
+                <span class="key">${index + 1}</span>
+            `;
+            inventoryUI.appendChild(slot);
+        });
+    }
+
+    // Update touch note buttons
+    const touchNotes = document.querySelectorAll('.touch-note[data-note]');
+    touchNotes.forEach(btn => {
+        const noteIndex = parseInt(btn.dataset.note);
+        const noteName = NOTE_NAMES[noteIndex];
         if (state.collectedNotes.has(noteName)) {
-            slot.classList.add('collected');
+            btn.classList.add('collected');
+        } else {
+            btn.classList.remove('collected');
         }
-
-        slot.innerHTML = `
-            <span class="name">${noteName}</span>
-            <span class="key">${index + 1}</span>
-        `;
-        inventoryUI.appendChild(slot);
     });
 }
 
 function highlightNote(noteName) {
+    // Highlight desktop inventory slot
     const slot = document.getElementById(`note-${noteName}`);
     if (slot) {
         slot.classList.add('active');
         setTimeout(() => slot.classList.remove('active'), 200);
+    }
+
+    // Highlight touch button
+    const noteIndex = NOTE_NAMES.indexOf(noteName);
+    const touchBtn = document.querySelector(`.touch-note[data-note="${noteIndex}"]`);
+    if (touchBtn) {
+        touchBtn.classList.add('active');
+        setTimeout(() => touchBtn.classList.remove('active'), 200);
     }
 }
 

@@ -15,6 +15,89 @@ let moveHeldTime = 0;
 export function initInput() {
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
+    initTouchControls();
+}
+
+function initTouchControls() {
+    // D-pad buttons
+    const dpadBtns = document.querySelectorAll('.dpad-btn[data-dir]');
+    dpadBtns.forEach(btn => {
+        const dir = btn.dataset.dir;
+        let dx = 0, dy = 0;
+        if (dir === 'up') dy = -1;
+        if (dir === 'down') dy = 1;
+        if (dir === 'left') dx = -1;
+        if (dir === 'right') dx = 1;
+
+        // Handle touch start for immediate + held movement
+        let holdInterval = null;
+        let holdTimeout = null;
+
+        const startMove = (e) => {
+            e.preventDefault();
+            if (callbacks.move) callbacks.move(dx, dy);
+            lastMoveTime = performance.now();
+
+            // Start holding after a short delay
+            holdTimeout = setTimeout(() => {
+                holdInterval = setInterval(() => {
+                    if (callbacks.move) callbacks.move(dx, dy);
+                }, MOVE_DELAY);
+            }, 200);
+        };
+
+        const stopMove = () => {
+            if (holdTimeout) clearTimeout(holdTimeout);
+            if (holdInterval) clearInterval(holdInterval);
+            holdTimeout = null;
+            holdInterval = null;
+        };
+
+        btn.addEventListener('touchstart', startMove, { passive: false });
+        btn.addEventListener('touchend', stopMove);
+        btn.addEventListener('touchcancel', stopMove);
+
+        // Mouse support for testing
+        btn.addEventListener('mousedown', startMove);
+        btn.addEventListener('mouseup', stopMove);
+        btn.addEventListener('mouseleave', stopMove);
+    });
+
+    // Note buttons
+    const noteBtns = document.querySelectorAll('.touch-note[data-note]');
+    noteBtns.forEach(btn => {
+        const noteIndex = parseInt(btn.dataset.note);
+
+        const playTouchNote = (e) => {
+            e.preventDefault();
+            if (callbacks.playNote) callbacks.playNote(noteIndex);
+        };
+
+        btn.addEventListener('touchstart', playTouchNote, { passive: false });
+        btn.addEventListener('mousedown', playTouchNote);
+    });
+
+    // Interact button
+    const interactBtn = document.getElementById('interactBtn');
+    if (interactBtn) {
+        const doInteract = (e) => {
+            e.preventDefault();
+            if (callbacks.interact) callbacks.interact();
+        };
+        interactBtn.addEventListener('touchstart', doInteract, { passive: false });
+        interactBtn.addEventListener('mousedown', doInteract);
+    }
+
+    // Restart button
+    const restartBtn = document.getElementById('restartBtn');
+    if (restartBtn) {
+        const doRestart = (e) => {
+            e.preventDefault();
+            if (callbacks.restart) callbacks.restart();
+        };
+        restartBtn.addEventListener('touchstart', doRestart, { passive: false });
+        restartBtn.addEventListener('mousedown', doRestart);
+    }
 }
 
 export function onMove(callback) {
