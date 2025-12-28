@@ -393,6 +393,11 @@ function updateInventoryUI() {
 }
 
 function highlightNote(noteName) {
+    // Don't show highlights during listening phase in Mozart Mode
+    if (state.puzzleState === 'listening' && state.hideNotesOnPlayback) {
+        return;
+    }
+
     // Highlight desktop inventory slot
     const slot = document.getElementById(`note-${noteName}`);
     if (slot) {
