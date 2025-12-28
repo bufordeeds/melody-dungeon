@@ -232,8 +232,8 @@ function interact() {
 }
 
 function startPuzzle(door) {
-    // Check if player has all required notes
-    const missingNotes = door.sequence.filter(n => !state.collectedNotes.has(n));
+    // Check if player has all required notes (deduplicate for display)
+    const missingNotes = [...new Set(door.sequence.filter(n => !state.collectedNotes.has(n)))];
     if (missingNotes.length > 0) {
         showMessage(`Missing notes: ${missingNotes.join(', ')}`);
         playErrorSound();
@@ -328,11 +328,21 @@ function showOverlay() {
     if (overlayUI) {
         overlayUI.classList.add('visible');
     }
+    // Also hide touch notes on mobile
+    const touchNotes = document.getElementById('touchNotes');
+    if (touchNotes) {
+        touchNotes.classList.add('hidden');
+    }
 }
 
 function hideOverlay() {
     if (overlayUI) {
         overlayUI.classList.remove('visible');
+    }
+    // Also show touch notes on mobile
+    const touchNotes = document.getElementById('touchNotes');
+    if (touchNotes) {
+        touchNotes.classList.remove('hidden');
     }
 }
 
