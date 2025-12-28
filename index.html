@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melody Dungeon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: monospace;
+        }
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        canvas {
+            border: 4px solid #4a4a6a;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #noteInventory {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: #2a2a4e;
+            border-radius: 4px;
+        }
+        .note-slot {
+            width: 40px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #4a4a6a;
+            border-radius: 4px;
+            color: #888;
+            font-size: 12px;
+        }
+        .note-slot.collected {
+            border-color: currentColor;
+            color: inherit;
+        }
+        .note-slot.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px currentColor;
+        }
+        .note-slot .key {
+            font-size: 10px;
+            opacity: 0.6;
+        }
+        #instructions {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="noteInventory"></div>
+        <div id="instructions">
+            Arrow keys: Move | 1-7: Play notes | Space: Interact with doors
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
